@@ -1,0 +1,5 @@
+knowledge_base/
+client.py
+logs.txt
+parameters.toml
+rag.ipynb

@@ -1,0 +1,12 @@
+uvicorn
+fastapi
+langchain
+langchain_cohere
+langchain_core
+chromadb
+langserve
+sse_starlette
+
+
+
+
