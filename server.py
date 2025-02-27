@@ -1,13 +1,15 @@
 import os
-from fastapi import FastAPI
-from langserve import add_routes
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
-from langchain.vectorstores import Chroma
+from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from langchain.schema.runnable import RunnablePassthrough
+from langchain_community.vectorstores import Chroma
 from langchain.prompts import PromptTemplate
 from langchain_cohere import ChatCohere
-from langchain.memory import ConversationBufferMemory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_cohere import CohereEmbeddings
+
+class QueryRequest(BaseModel):
+    question: str
 
 app = FastAPI(
     title="hrithik's clone",
@@ -15,7 +17,7 @@ app = FastAPI(
     description="My clone powered by cohere and langchain - RAG",
 )
 
-cohere_api_key = os.getenv("API")
+cohere_api_key = "cZWxyHPX5B72hYVgeLK45bTrwiM05v8lQ5dHGIXS"         #os.getenv("API")
 app = FastAPI()
 
 embeddings = CohereEmbeddings(
@@ -58,7 +60,7 @@ I am, above all, a work in progress—relentlessly evolving, endlessly seeking, 
 """
 )
 
-from langchain.schema.runnable import RunnablePassthrough, RunnableLambda
+from langchain.schema.runnable import RunnablePassthrough
 chain = (
     {
         "context": retriever,
@@ -69,12 +71,17 @@ chain = (
     | str_out
 )
    
+def generate_response(question: str):
+    return chain.invoke(question)
 
-add_routes(
-    app,
-    chain,
-    path="/clone_chat",
-)
+# REST API Endpoint
+@app.post("/clone_chat")
+def clone_chat(request: QueryRequest):
+    try:
+        response = chain.invoke(request.question)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn
