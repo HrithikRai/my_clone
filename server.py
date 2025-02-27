@@ -17,7 +17,7 @@ app = FastAPI(
     description="My clone powered by cohere and langchain - RAG",
 )
 
-cohere_api_key = "cZWxyHPX5B72hYVgeLK45bTrwiM05v8lQ5dHGIXS"         #os.getenv("API")
+cohere_api_key = os.getenv("API")
 app = FastAPI()
 
 embeddings = CohereEmbeddings(
