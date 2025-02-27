@@ -1,6 +1,7 @@
 import os
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from langchain.schema.runnable import RunnablePassthrough
 from langchain_community.vectorstores import Chroma
 from langchain.prompts import PromptTemplate
@@ -15,6 +16,15 @@ app = FastAPI(
     title="hrithik's clone",
     version="1.0",
     description="My clone powered by cohere and langchain - RAG",
+)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (use specific domains in production)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
 )
 
 cohere_api_key = os.getenv("API")
