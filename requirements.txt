@@ -1,8 +1,10 @@
 uvicorn
-fastapi
+flask
+flask-cors
 langchain
-langchain_cohere
-langchain_core
+langchain-cohere
+langchain-core
+langchain-chroma
 chromadb
 langserve
 sse_starlette

@@ -1,9 +1,9 @@
 import os
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 from langchain.schema.runnable import RunnablePassthrough
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain.prompts import PromptTemplate
 from langchain_cohere import ChatCohere
 from langchain_core.output_parsers import StrOutputParser
@@ -12,31 +12,22 @@ from langchain_cohere import CohereEmbeddings
 class QueryRequest(BaseModel):
     question: str
 
-app = FastAPI(
-    title="hrithik's clone",
-    version="1.0",
-    description="My clone powered by cohere and langchain - RAG",
-)
+app = Flask(__name__)
 
 # Enable CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (use specific domains in production)
-    allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
-)
+CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['CORS_HEADERS'] = 'Content-Type'
 
-cohere_api_key = os.getenv("API")
-app = FastAPI()
+# Fetch API key from environment variables
+COHERE_API_KEY = os.getenv("API")
 
 embeddings = CohereEmbeddings(
-    cohere_api_key=cohere_api_key,
+    cohere_api_key=COHERE_API_KEY,
     model="embed-english-v3.0",
 )
 
-retriever = Chroma(persist_directory="chroma_db",collection_name='clone', embedding_function=embeddings).as_retriever()
-chat = ChatCohere(cohere_api_key=cohere_api_key)
+retriever = Chroma(persist_directory="chroma_db", collection_name='clone', embedding_function=embeddings).as_retriever()
+chat = ChatCohere(cohere_api_key=COHERE_API_KEY)
 str_out = StrOutputParser()
 
 prompt_template = PromptTemplate(
@@ -81,19 +72,19 @@ chain = (
     | str_out
 )
    
-def generate_response(question: str):
-    return chain.invoke(question)
-
 # REST API Endpoint
-@app.post("/clone_chat")
-def clone_chat(request: QueryRequest):
+@app.route("/clone_chat", methods=["POST"])
+def clone_chat():
     try:
-        response = chain.invoke(request.question)
-        return response
+        data = request.get_json()
+        if not data or "question" not in data:
+            return jsonify({"error": "Missing question field"}), 400
+        
+        response = chain.invoke(data["question"])
+        return jsonify({"response": response})
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == "__main__":
-    import uvicorn
-    port = os.getenv("PORT",10000)
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    port = int(os.getenv("PORT", 10000))
+    app.run(host="0.0.0.0", port=port, debug=True)
